@@ -1,0 +1,48 @@
+- name: Build and Deploy Docker Container
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Install required packages
+      package:
+        name:
+          - docker
+        state: present
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Python Docker SDK
+      pip:
+        name: docker
+
+    - name: Copy index.html to remote server
+      copy:
+        src: index.html
+        dest: /opt/test/index.html
+
+    - name: Copy Dockerfile to remote server
+      copy:
+        src: Dockerfile
+        dest: /opt/test/Dockerfile
+
+    - name: Build Docker image
+      community.docker.docker_image:
+        name: my-nginx-image
+        tag: latest
+        source: build
+        build:
+          path: /opt/test
+        state: present
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: my-nginx-container
+        image: my-nginx-image:latest
+        ports:
+          - "80:80"
+        state: started
